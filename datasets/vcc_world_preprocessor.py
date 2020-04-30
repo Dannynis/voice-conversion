@@ -9,6 +9,9 @@ import torchaudio
 import torch.nn.functional as F
 from random import shuffle
 import pyworld as pw
+import glob, os
+from pathlib import Path
+from tqdm import tqdm
 
 AUDIO_EXTENSIONS = [
     '.wav', '.mp3', '.flac', '.sph', '.ogg', '.opus',
@@ -148,52 +151,16 @@ class VCCWORLDPreprocessor(): # TODO: refactor
             f.write("speaker_offset_idx,{}\n".format(self.speaker_offset_idx))
 
     def process(self):
-        """Process the VCC2016 data if it doesn't exist in processed_folder already."""
-        import zipfile
 
-        if self._check_exists():
-            return
+        audios = list(Path(self.root).rglob('*.wav'))
 
-        raw_abs_dir = os.path.join(self.root, self.raw_folder)
-        processed_abs_dir = os.path.join(self.root, self.processed_folder)
-        dset_abs_path = os.path.join(
-            self.root, self.raw_folder, self.dset_path)
+        speakers = set([str(f).split("/", -1)[-2] for f in audios])
 
-        try:
-            os.makedirs(os.path.join(self.root, self.processed_folder))
-            os.makedirs(os.path.join(self.root, self.raw_folder))
-        except OSError as e:
-            if e.errno == errno.EEXIST:
-                pass
-            else:
-                raise
+        self.ids = {}
 
-        zip_path = self.zip_path
-        print('Unzipping', zip_path)
-        filename = zip_path.rpartition('/')[2]
-        file_path = os.path.join(self.root, self.raw_folder, filename)
-        if not os.path.isfile(file_path):
-            shutil.copy2(zip_path, file_path)
-
-        if not os.path.exists(dset_abs_path):
-            with zipfile.ZipFile(file_path) as zip_f:
-                zip_f.extractall(raw_abs_dir)
-        else:
-            print("Using existing raw folder")
-        if not self.dev_mode:
-            os.unlink(file_path)
-
-        # process and save as torch files
-        torchaudio.initialize_sox()
-        print('Processing...')
-        shutil.copyfile(
-            os.path.join(dset_abs_path, "README"),
-            os.path.join(processed_abs_dir, "VCC2016_README")
-        )
-        audios = make_manifest(dset_abs_path)
-        self.ids = load_ids(dset_abs_path)
+        for i,s in enumerate(speakers):
+            self.ids[s] = i
         print("Found {} audio files".format(len(audios)))
-        
         print('Extracting WORLD features.')
         spectras = []
         aperiodicities = []
@@ -206,8 +173,8 @@ class VCCWORLDPreprocessor(): # TODO: refactor
         self.chunk_indices = {}
         current_chunk_start_idx = 0
         prev_speaker = -1
-        for f in audios:
-            speaker = f.split("/", -1)[-2]
+        for f in tqdm(audios):
+            speaker = str(f).split("/", -1)[-2]
             spectra, aperiodicity, f0_, energy = read_audio_and_extract_features(f, trim_silence=self.trim_silence)
 
             # New speaker, save current chunk and start a fresh chunk
@@ -255,19 +222,26 @@ class VCCWORLDPreprocessor(): # TODO: refactor
 
         if not self.dev_mode:
             shutil.rmtree(raw_abs_dir, ignore_errors=True)
-        torchaudio.shutdown_sox()
+        print ('commented sox shutdown')
+        # torchaudio.shutdown_sox()
         print('Done!')
 
     def save_WORLD_chunk(self, chunk_id, spectra, aperiodicity, f0, energies, labels):
         print('Saving chunk {} with speakers {}'.format(chunk_id, set(labels)))
         # Save training data (spectra)
         data_training = (spectra, labels)
+        target_dir = os.path.join(
+            self.root,
+            self.processed_folder)
+        try:
+            os.makedirs(target_dir)
+            print ('created dir {}'.format(target_dir))
+        except:
+            pass
         torch.save(
             data_training,
-            os.path.join(
-                self.root,
-                self.processed_folder,
-                "vcc2016_WORLD_train_{:04d}.pt".format(chunk_id)
+            os.path.join(target_dir,
+                "_train_WORLD_{:04d}.pt".format(chunk_id)
             )
         )
         # Save other WORLD features
@@ -277,7 +251,7 @@ class VCCWORLDPreprocessor(): # TODO: refactor
             os.path.join(
                 self.root,
                 self.processed_folder,
-                "vcc2016_WORLD_conv_{:04d}.pt".format(chunk_id)
+                "_WORLD_conv_{:04d}.pt".format(chunk_id)
             )
         )
     

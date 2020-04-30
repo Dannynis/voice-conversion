@@ -8,8 +8,8 @@ from util.arg_extractor import str2bool
 
 parser = argparse.ArgumentParser(
         description='Speech data preprocessing helper script.')
-parser.add_argument('--dataset', type=str, help='Dataset either VCCWORLD2016, VCCRaw2016, or VCTK.')
-parser.add_argument('--path', type=str, default='data', help='Path to the data folder that contains raw/VCTK-Corpus.zip file.')
+parser.add_argument('--dataset', type=str,default='VCCWORLD2016', help='Dataset either VCCWORLD2016, VCCRaw2016, or VCTK.')
+parser.add_argument('--path', type=str, default='/media/dan/Disk/ml+dl+dsp/Pytorch-CycleGAN-VC2/test_44k', help='Path to the data folder that contains raw/VCTK-Corpus.zip file.')
 parser.add_argument('--shuffle_order', type=str2bool, default=False, help='If true, shuffles the samples across the chunk-files.')
 parser.add_argument('--trim_silence', type=str2bool, default=False, help='If true, trims silence from front and back of the audio.')
 parser.add_argument('--split_samples', type=str2bool, default=False, help='If true, splits samples to sample_length.')
