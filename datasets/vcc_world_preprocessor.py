@@ -215,7 +215,7 @@ class VCCWORLDPreprocessor(): # TODO: refactor
             self.chunk_indices[chunk_id] = (current_chunk_start_idx, samples-1)
             self.save_WORLD_chunk(chunk_id, spectras, aperiodicities, f0s, energies, labels)
 
-        del spectras,aperiodicities.f0s,energies
+        del spectras,aperiodicities,f0s,energies
         print ('writing info')
 
         self._write_info(samples)
