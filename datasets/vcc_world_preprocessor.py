@@ -175,7 +175,7 @@ class VCCWORLDPreprocessor(): # TODO: refactor
         prev_speaker = -1
         for f in tqdm(audios):
             speaker = str(f).split("/", -1)[-2]
-            # spectra, aperiodicity, f0_, energy = read_audio_and_extract_features(f, trim_silence=self.trim_silence)
+            spectra, aperiodicity, f0_, energy = read_audio_and_extract_features(f, trim_silence=self.trim_silence)
 
             # New speaker, save current chunk and start a fresh chunk
             if prev_speaker != -1 and speaker != prev_speaker:
@@ -185,7 +185,7 @@ class VCCWORLDPreprocessor(): # TODO: refactor
                 prev_speaker = speaker
                 current_chunk_start_idx = samples
 
-                # self.save_WORLD_chunk(chunk_id, spectras, aperiodicities, f0s, energies, labels)
+                self.save_WORLD_chunk(chunk_id, spectras, aperiodicities, f0s, energies, labels)
                 chunk_id += 1
                 spectras = []
                 aperiodicities = []
